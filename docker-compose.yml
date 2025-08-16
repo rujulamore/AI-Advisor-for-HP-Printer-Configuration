@@ -1,0 +1,80 @@
+services:
+  # MCP Server component
+  mcp-server:
+    image: ghcr.io/astral-sh/uv:python3.10-bookworm-slim
+    working_dir: /app
+    command: >
+      bash -c "uv pip install --system -r requirements.txt &&
+              PYTHONPATH=/app uv run -m mcp_server.server.server"
+    volumes:
+      - ./mcp_server:/app/mcp_server
+      - ./requirements.txt:/app/requirements.txt
+    env_file:
+      - .env
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8050
+      - LLM_MODEL=llama3.2
+      - PYTHONPATH=/app
+    expose:
+      - 8050
+    networks:
+      - mcp-network
+    restart: always
+
+  # Web API component
+  web-api:
+    image: ghcr.io/astral-sh/uv:python3.10-bookworm-slim
+    working_dir: /app
+    command: >
+      bash -c "uv pip install --system -r requirements.txt &&
+              PYTHONPATH=/app uv run -m mcp_server.mainWeb"
+    volumes:
+      - ./mcp_server:/app/mcp_server
+      - ./requirements.txt:/app/requirements.txt
+      - ./caddy-logs:/logs:ro
+    env_file:
+      - .env
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - PYTHONPATH=/app
+    expose:
+      - 8000
+    depends_on:
+      - mcp-server
+    networks:
+      - mcp-network
+    restart: always
+
+  # Frontend serving using Nginx
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    networks:
+      - mcp-network
+    expose:
+      - 80
+    restart: always
+
+  # Caddy reverse proxy
+  caddy:
+    image: caddy:alpine
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./Frontend/build:/usr/share/nginx/html
+      - ./caddy-logs:/var/log/caddy
+    ports:
+      - "8080:8080"
+    networks:
+      - mcp-network
+    depends_on:
+      - mcp-server
+      - web-api
+      - frontend
+    restart: always
+
+networks:
+  mcp-network:
+    driver: bridge
