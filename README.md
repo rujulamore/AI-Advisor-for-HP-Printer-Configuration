@@ -1,6 +1,7 @@
 
 # AI Smart Advisor to Automate Control of a Million Dollar Printing Press
 An intelligent hybrid system for querying and analyzing HP test print reports.
+This project was carried out in collaboration with my teammate, Suriya Satishkumar.
 
 # Overview
 This branch contains the Hybrid component of the HP Print Report Analysis system. It enables users to query processed print reports using natural language, making it easy to search for specific printing configurations and retrieve relevant documents based on technical parameters.
